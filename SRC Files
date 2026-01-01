@@ -1,0 +1,118 @@
+{
+  "skills_match": 0.3,
+  "experience_match": 0.25,
+  "tools_match": 0.2,
+  "keyword_similarity": 0.15,
+  "education_match": 0.1
+}
+
+import pdfplumber
+
+def extract_text(pdf_path):
+    text = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or ""
+    return text.lower()
+
+import re
+
+def extract_email(text):
+    match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
+    return match.group(0) if match else None
+
+def extract_mobile(text):
+    match = re.search(r'\b\d{10}\b', text)
+    return match.group(0) if match else None
+
+def extract_name(text):
+    return text.split("\n")[0].title()
+
+def parse_resume(text):
+    return {
+        "name": extract_name(text),
+        "email": extract_email(text),
+        "mobile": extract_mobile(text)
+    }
+
+def parse_jd(text):
+    keywords = set(text.split())
+    return {
+        "keywords": keywords
+    }
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+def calculate_score(jd_text, resume_text):
+    vectorizer = TfidfVectorizer(stop_words="english")
+    vectors = vectorizer.fit_transform([jd_text, resume_text])
+    score = cosine_similarity(vectors[0], vectors[1])[0][0]
+    return round(score * 100, 2)
+
+def generate_explanation(score):
+    if score >= 80:
+        return "Strong match with job description."
+    elif score >= 60:
+        return "Moderate match; some skills missing."
+    else:
+        return "Low relevance to job description."
+
+from datetime import datetime
+
+def timestamp():
+    return datetime.utcnow().isoformat()
+
+from pdf_extractor import extract_text
+from resume_parser import parse_resume
+from scorer import calculate_score
+from explainer import generate_explanation
+from utils import timestamp
+
+JD_PATH = "data/jd/job_description.pdf"
+RESUME_PATH = "data/resumes/sample_resume.pdf"
+
+jd_text = extract_text(JD_PATH)
+resume_text = extract_text(RESUME_PATH)
+
+candidate = parse_resume(resume_text)
+score = calculate_score(jd_text, resume_text)
+
+output = {
+    "candidate": candidate,
+    "score": score,
+    "explanation": generate_explanation(score),
+    "processed_at": timestamp()
+}
+
+print(output)
+
+from flask import Flask, request, jsonify
+from src.pdf_extractor import extract_text
+from src.resume_parser import parse_resume
+from src.scorer import calculate_score
+from src.explainer import generate_explanation
+
+app = Flask(__name__)
+
+JD_PATH = "data/jd/job_description.pdf"
+
+@app.route("/score", methods=["POST"])
+def score_resume():
+    resume_path = request.json["resume_path"]
+
+    jd_text = extract_text(JD_PATH)
+    resume_text = extract_text(resume_path)
+
+    candidate = parse_resume(resume_text)
+    score = calculate_score(jd_text, resume_text)
+
+    return jsonify({
+        "candidate": candidate,
+        "score": score,
+        "explanation": generate_explanation(score)
+    })
+
+if __name__ == "__main__":
+    app.run(port=5000)
+

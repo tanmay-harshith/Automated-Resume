@@ -1,0 +1,12 @@
+Google Drive
+   ↓
+n8n watches Resume Folder
+   ↓
+n8n downloads PDF
+   ↓
+n8n sends PDF path → Flask API
+   ↓
+VS Code Python code scores resume
+   ↓
+n8n updates Google Sheet
+

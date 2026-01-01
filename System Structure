@@ -1,0 +1,30 @@
+resume-relevance-system/
+│
+├── README.md
+├── requirements.txt
+├── .env
+│
+├── config/
+│   ├── folders.json
+│   ├── scoring_weights.json
+│
+├── data/
+│   ├── jd/
+│   │   └── job_description.pdf
+│   ├── resumes/
+│   │   └── sample_resume.pdf
+│
+├── src/
+│   ├── main.py
+│   ├── pdf_extractor.py
+│   ├── resume_parser.py
+│   ├── jd_parser.py
+│   ├── scorer.py
+│   ├── explainer.py
+│   └── utils.py
+│
+├── api/
+│   └── app.py
+│
+└── n8n/
+    └── resume_scoring_workflow.json
